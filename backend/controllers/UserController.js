@@ -1,4 +1,5 @@
 import user from "../models/UserModel.js";
+import bcrypt from "bcrypt";
 
 export const getUsers = async (req, res) => {
   try {
@@ -23,9 +24,17 @@ export const getUserById = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
+  const { username, email, password, role } = req.body;
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(password, salt);
   try {
-    const newUser = await user.create(req.body);
-    res.status(201).json(newUser);
+    await user.create({
+      username: username,
+      email: email,
+      password: hashedPassword,
+      role: role,
+    });
+    res.status(201).json({ message: "Register Berhasil" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

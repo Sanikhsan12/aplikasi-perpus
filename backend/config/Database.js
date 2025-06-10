@@ -1,6 +1,6 @@
-import { sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
 
-const db = new sequelize("uas_weblanjut", "root", "", {
+const db = new Sequelize("uas_weblanjut", "root", "", {
   host: "localhost",
   dialect: "mysql",
   port: 3307,

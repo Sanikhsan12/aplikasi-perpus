@@ -5,6 +5,7 @@ import {
   createPinjam,
   updatePinjam,
   deletePinjam,
+  returnPinjam,
 } from "../controllers/PinjamController.js";
 
 // inisialisasi router
@@ -16,5 +17,6 @@ router.get("/pinjam/:id", getPinjamById);
 router.post("/pinjam", createPinjam);
 router.patch("/pinjam/:id", updatePinjam);
 router.delete("/pinjam/:id", deletePinjam);
+router.patch("/pinjam/:id/return", returnPinjam);
 
 export default router;

@@ -1,4 +1,6 @@
 import Pinjam from "../models/PinjamModel.js";
+import Buku from "../models/BookModel.js";
+import db from "../config/Database.js";
 
 export const getPinjams = async (req, res) => {
   try {
@@ -23,10 +25,43 @@ export const getPinjamById = async (req, res) => {
 };
 
 export const createPinjam = async (req, res) => {
+  const { tanggal_pinjam, tanggal_kembali, userId, bukuId } = req.body;
+  const t = await db.transaction(); // Start a transaction
+
   try {
-    const newPinjam = await Pinjam.create(req.body);
+    // 1. Cek ketersediaan buku
+    const book = await Buku.findByPk(bukuId, { transaction: t });
+    if (!book) {
+      await t.rollback();
+      return res.status(404).json({ message: "Buku tidak ditemukan" });
+    }
+    if (book.stok <= 0) {
+      await t.rollback();
+      return res.status(400).json({ message: "Stok buku tidak tersedia" });
+    }
+
+    // 2. Kurangi stok buku
+    await Buku.update(
+      { stok: book.stok - 1 },
+      { where: { id: bukuId }, transaction: t }
+    );
+
+    // 3. Buat catatan peminjaman
+    const newPinjam = await Pinjam.create(
+      {
+        tanggal_pinjam,
+        tanggal_kembali,
+        userId,
+        bukuId,
+      },
+      { transaction: t }
+    );
+
+    await t.commit(); // Commit the transaction
     res.status(201).json(newPinjam);
   } catch (error) {
+    await t.rollback(); // Rollback the transaction if any error occurs
+    console.error("Error creating pinjam:", error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -59,5 +94,43 @@ export const deletePinjam = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const returnPinjam = async (req, res) => {
+  const { id } = req.params;
+  const t = await db.transaction();
+
+  try {
+    const pinjam = await Pinjam.findByPk(id, { transaction: t });
+    if (!pinjam) {
+      await t.rollback();
+      return res
+        .status(404)
+        .json({ message: "Catatan peminjaman tidak ditemukan" });
+    }
+
+    const book = await Buku.findByPk(pinjam.bukuId, { transaction: t });
+    if (!book) {
+      await t.rollback();
+      return res.status(404).json({ message: "Buku terkait tidak ditemukan" });
+    }
+    await Buku.update(
+      { stok: book.stok + 1 },
+      { where: { id: pinjam.bukuId }, transaction: t }
+    );
+    await Pinjam.update(
+      { tanggal_kembali: new Date() },
+      { where: { id: id }, transaction: t }
+    );
+
+    await t.commit();
+    res
+      .status(200)
+      .json({ message: "Buku berhasil dikembalikan dan stok diperbarui" });
+  } catch (error) {
+    await t.rollback();
+    console.error("Error returning pinjam:", error);
+    res.status(400).json({ message: error.message });
   }
 };

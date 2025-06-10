@@ -3,8 +3,16 @@ import cors from "cors";
 import UserRouter from "./routes/UserRouter.js";
 import BookRouter from "./routes/BookRouter.js";
 import AuthRouter from "./routes/AuthRouter.js";
+import PinjamRouter from "./routes/PinjamRouter.js";
+import db from "./config/Database.js";
 
 const app = express();
+
+// singkronisasi database
+(async () => {
+  await db.sync();
+})();
+
 app.use(cors());
 app.use(express.json());
 
@@ -12,6 +20,7 @@ app.use(express.json());
 app.use(UserRouter);
 app.use(BookRouter);
 app.use(AuthRouter);
+app.use(PinjamRouter);
 
 app.listen(5000, () => {
   console.log("server jalan di port 5000 euy");

@@ -38,6 +38,3 @@ const Buku = db.define(
 );
 
 export default Buku;
-(async () => {
-  await db.sync();
-})();

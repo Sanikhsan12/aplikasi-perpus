@@ -50,6 +50,3 @@ Buku.hasMany(Pinjam, { foreignKey: "bukuId" });
 Pinjam.belongsTo(Buku, { foreignKey: "bukuId" });
 
 export default Pinjam;
-(async () => {
-  await db.sync();
-})();

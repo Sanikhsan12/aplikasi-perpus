@@ -14,7 +14,7 @@ const router = express.Router();
 router.get("/book", getBooks);
 router.get("/book/:id", getBookById);
 router.post("/book", createBook);
-router.put("/book/:id", updateBook);
+router.patch("/book/:id", updateBook);
 router.delete("/book/:id", deleteBook);
 
 // ekspor router

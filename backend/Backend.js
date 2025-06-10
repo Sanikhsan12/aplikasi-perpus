@@ -4,8 +4,10 @@ import UserRouter from "./routes/UserRouter.js";
 import BookRouter from "./routes/BookRouter.js";
 import AuthRouter from "./routes/AuthRouter.js";
 import PinjamRouter from "./routes/PinjamRouter.js";
+import dotenv from "dotenv";
 import db from "./config/Database.js";
 
+dotenv.config();
 const app = express();
 
 // singkronisasi database

@@ -77,3 +77,39 @@ export const register = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const tokenRefresh = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(401).json({ message: "Token tidak disediakan" });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res
+          .status(403)
+          .json({ message: "Token tidak valid atau kedaluwarsa" });
+      }
+
+      // Buat token baru dengan masa berlaku yang diperbarui
+      const newToken = jwt.sign(
+        {
+          userId: decoded.userId,
+          username: decoded.username,
+          role: decoded.role,
+          email: decoded.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1h", // Sesuaikan masa berlaku token
+        }
+      );
+
+      res.status(200).json({ accessToken: newToken });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

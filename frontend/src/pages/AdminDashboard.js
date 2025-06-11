@@ -21,10 +21,8 @@ const AdminDashboard = () => {
 
   const refreshToken = async () => {
     try {
-      // Use the raw axios import for the refresh token endpoint, as it sets the token after this call
       const response = await api.post("/token", {
-        // Use 'api' instance
-        token: localStorage.getItem("token"), // Assuming token is stored in localStorage
+        token: localStorage.getItem("token"),
       });
       setToken(response.data.accessToken);
       const decoded = jwtDecode(response.data.accessToken);
@@ -38,7 +36,7 @@ const AdminDashboard = () => {
   };
 
   const Logout = () => {
-    localStorage.removeItem("token"); // Clear token on logout
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -71,12 +69,6 @@ const AdminDashboard = () => {
         </div>
 
         <div id="navbarBasicExample" className="navbar-menu">
-          <div className="navbar-start">
-            <a className="navbar-item has-text-white" href="/dashboard">
-              Home
-            </a>
-          </div>
-
           <div className="navbar-end">
             <div className="navbar-item">
               <p className="has-text-white mr-3">Hello, {username}</p>

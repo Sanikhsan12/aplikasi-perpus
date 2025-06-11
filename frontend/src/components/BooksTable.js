@@ -1,6 +1,6 @@
 // frontend/src/components/BooksTable.js
 import React, { useState, useEffect } from "react";
-import api from "../api"; // Import the configured axios instance
+import api from "../api";
 import Table from "./Table";
 
 const BooksTable = () => {
@@ -11,7 +11,7 @@ const BooksTable = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await api.get("/book"); // Use 'api' instead of 'axios'
+        const response = await api.get("/book");
         setBooks(response.data);
         setLoading(false);
       } catch (err) {

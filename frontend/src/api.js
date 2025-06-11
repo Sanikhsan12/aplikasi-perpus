@@ -13,7 +13,6 @@ api.interceptors.request.use(async (config) => {
     const currentTime = Date.now() / 1000;
 
     if (decoded.exp < currentTime) {
-      // Token expired, try to refresh
       try {
         const response = await axios.post("http://localhost:5000/token", {
           token: token,
@@ -22,9 +21,8 @@ api.interceptors.request.use(async (config) => {
         localStorage.setItem("token", newToken);
         config.headers.Authorization = `Bearer ${newToken}`;
       } catch (error) {
-        // Refresh token failed, redirect to login
         localStorage.removeItem("token");
-        window.location.href = "/login"; // Redirect to login page
+        window.location.href = "/login";
         return Promise.reject(error);
       }
     } else {

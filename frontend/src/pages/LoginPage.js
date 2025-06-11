@@ -16,7 +16,7 @@ const LoginPage = () => {
         email: email,
         password: password,
       });
-      navigate("/dashboard"); // Redirect to dashboard or another protected route
+      navigate("/adminDashboard");
     } catch (error) {
       if (error.response) {
         setMsg(error.response.data.message);

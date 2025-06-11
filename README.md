@@ -35,3 +35,5 @@ Proyek ini bertujuan untuk menyediakan solusi aplikasi perpustakaan lengkap deng
 - terminal B npm start
 
 ## Tampilan
+
+![Image](https://github.com/user-attachments/assets/55b31f99-3a29-4ba2-a063-4cc9e77b34d6)

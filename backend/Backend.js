@@ -7,8 +7,7 @@ import PinjamRouter from "./routes/PinjamRouter.js";
 import PengembalianRouter from "./routes/PengembalianRouter.js";
 import dotenv from "dotenv";
 import db from "./config/Database.js";
-import { verifyToken } from "./middleware/AuthMiddleware.js"; // Import the middleware
-
+import { verifyToken } from "./middleware/AuthMiddleware.js";
 dotenv.config();
 const app = express();
 

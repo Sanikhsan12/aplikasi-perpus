@@ -1,0 +1,19 @@
+.has-background-brown {
+  background-color: #8b4513;
+}
+
+.white-stroke-black-fill {
+  color: black;
+  -webkit-text-stroke: 1.5px white;
+  text-stroke: 1.5px white;
+}
+
+.has-background-brown .white-stroke-black-fill {
+  color: black;
+  -webkit-text-stroke: 1.5px white;
+  text-stroke: 1.5px white;
+}
+
+.footer.is-small-padding {
+  padding: 1rem;
+}

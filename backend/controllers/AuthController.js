@@ -12,7 +12,7 @@ export const login = async (req, res) => {
     });
     // jika tidak ada user dengan email tersebut
     if (userAcc.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User Tidak Ditemukan" });
     }
     // cek apakah password yang dimasukkan sesuai dengan yang ada di database
     const isMatch = await bcrypt.compare(
@@ -20,7 +20,7 @@ export const login = async (req, res) => {
       userAcc[0].password
     );
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Email Atau Password Salah" });
     }
 
     const userId = userAcc[0].id;
@@ -58,7 +58,7 @@ export const register = async (req, res) => {
       where: { email: email },
     });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res.status(400).json({ message: "Email Sudah Terdaftar" });
     }
 
     const salt = await bcrypt.genSalt();
@@ -71,7 +71,7 @@ export const register = async (req, res) => {
       role: role,
     });
 
-    res.status(201).json({ message: "Register successful" });
+    res.status(201).json({ message: "Register Berhasil" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

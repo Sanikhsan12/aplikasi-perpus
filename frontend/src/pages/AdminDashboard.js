@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminDashboard.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api"; // Import the configured axios instance
 import { jwtDecode } from "jwt-decode";
 import UsersTable from "../components/UsersTable";
 import BooksTable from "../components/BooksTable";
@@ -21,7 +21,9 @@ const AdminDashboard = () => {
 
   const refreshToken = async () => {
     try {
-      const response = await axios.post("http://localhost:5000/token", {
+      // Use the raw axios import for the refresh token endpoint, as it sets the token after this call
+      const response = await api.post("/token", {
+        // Use 'api' instance
         token: localStorage.getItem("token"), // Assuming token is stored in localStorage
       });
       setToken(response.data.accessToken);

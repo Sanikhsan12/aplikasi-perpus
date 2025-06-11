@@ -1,6 +1,6 @@
 // frontend/src/components/PengembalianTable.js
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api"; // Import the configured axios instance
 import Table from "./Table";
 
 const PengembalianTable = () => {
@@ -11,7 +11,7 @@ const PengembalianTable = () => {
   useEffect(() => {
     const fetchPengembalian = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/pengembalian");
+        const response = await api.get("/pengembalian"); // Use 'api' instead of 'axios'
         setPengembalian(response.data);
         setLoading(false);
       } catch (err) {

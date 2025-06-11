@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "axios"; // Keep axios for direct login call
 import { useNavigate } from "react-router-dom";
 import "bulma/css/bulma.min.css";
 
@@ -12,10 +12,11 @@ const LoginPage = () => {
   const Auth = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/login", {
+      const response = await axios.post("http://localhost:5000/login", {
         email: email,
         password: password,
       });
+      localStorage.setItem("token", response.data.token); // Store the token
       navigate("/adminDashboard");
     } catch (error) {
       if (error.response) {

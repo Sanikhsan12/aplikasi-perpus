@@ -1,6 +1,6 @@
 // frontend/src/components/PeminjamanTable.js
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api"; // Import the configured axios instance
 import Table from "./Table";
 
 const PeminjamanTable = () => {
@@ -11,7 +11,7 @@ const PeminjamanTable = () => {
   useEffect(() => {
     const fetchPeminjaman = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/pinjam");
+        const response = await api.get("/pinjam"); // Use 'api' instead of 'axios'
         setPeminjaman(response.data);
         setLoading(false);
       } catch (err) {

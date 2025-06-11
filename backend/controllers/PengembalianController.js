@@ -1,4 +1,5 @@
 import Pengembalian from "../models/PengembalianModel.js";
+import User from "../models/UserModel.js";
 import Pinjam from "../models/PinjamModel.js";
 import Buku from "../models/BookModel.js";
 import db from "../config/Database.js";

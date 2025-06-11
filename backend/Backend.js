@@ -7,6 +7,7 @@ import PinjamRouter from "./routes/PinjamRouter.js";
 import PengembalianRouter from "./routes/PengembalianRouter.js";
 import dotenv from "dotenv";
 import db from "./config/Database.js";
+import { verifyToken } from "./middleware/AuthMiddleware.js"; // Import the middleware
 
 dotenv.config();
 const app = express();
@@ -22,9 +23,10 @@ app.use(express.json());
 // using routes
 app.use(UserRouter);
 app.use(BookRouter);
-app.use(AuthRouter);
 app.use(PinjamRouter);
 app.use(PengembalianRouter);
+app.use(AuthRouter);
+app.use(verifyToken);
 
 app.listen(5000, () => {
   console.log("server jalan di port 5000 euy");

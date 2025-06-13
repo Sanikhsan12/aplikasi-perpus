@@ -2,25 +2,94 @@
 import React, { useState, useEffect } from "react";
 import api from "../api";
 import Table from "./Table";
+import ActionModal from "./ActionModal";
 
 const BooksTable = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState("add");
+  const [currentBook, setCurrentBook] = useState({
+    judul: "",
+    penulis: "",
+    penerbit: "",
+    tahun_terbit: "",
+    stok: "",
+  });
+
+  const fetchBooks = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/book");
+      setBooks(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const response = await api.get("/book");
-        setBooks(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError(err);
-        setLoading(false);
-      }
-    };
     fetchBooks();
   }, []);
+
+  const handleOpenModal = (type, book = null) => {
+    setModalType(type);
+    if (type === "edit" && book) {
+      setCurrentBook(book);
+    } else {
+      setCurrentBook({
+        judul: "",
+        penulis: "",
+        penerbit: "",
+        tahun_terbit: "",
+        stok: "",
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCurrentBook({
+      judul: "",
+      penulis: "",
+      penerbit: "",
+      tahun_terbit: "",
+      stok: "",
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentBook({ ...currentBook, [name]: value });
+  };
+
+  const handleSave = async () => {
+    try {
+      if (modalType === "add") {
+        await api.post("/book", currentBook);
+      } else {
+        await api.patch(`/book/${currentBook.id}`, currentBook);
+      }
+      fetchBooks();
+      handleCloseModal();
+    } catch (error) {
+      console.error("Gagal menyimpan buku:", error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus buku ini?")) {
+      try {
+        await api.delete(`/book/${id}`);
+        fetchBooks();
+      } catch (error) {
+        console.error("Gagal menghapus buku:", error);
+      }
+    }
+  };
 
   const columns = [
     { header: "ID", accessor: "id" },
@@ -33,8 +102,18 @@ const BooksTable = () => {
       header: "Aksi",
       render: (row) => (
         <>
-          <button className="button is-small is-info mr-2">Edit</button>
-          <button className="button is-small is-danger">Hapus</button>
+          <button
+            className="button is-small is-info mr-2"
+            onClick={() => handleOpenModal("edit", row)}
+          >
+            Edit
+          </button>
+          <button
+            className="button is-small is-danger"
+            onClick={() => handleDelete(row.id)}
+          >
+            Hapus
+          </button>
         </>
       ),
     },
@@ -45,8 +124,89 @@ const BooksTable = () => {
 
   return (
     <div className="box">
-      <h2 className="title is-4">Daftar Buku</h2>
+      <div className="is-flex is-justify-content-space-between is-align-items-center">
+        <h2 className="title is-4">Daftar Buku</h2>
+        <button
+          className="button is-primary"
+          onClick={() => handleOpenModal("add")}
+        >
+          Tambah Buku
+        </button>
+      </div>
       <Table data={books} columns={columns} />
+
+      <ActionModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={modalType === "add" ? "Tambah Buku Baru" : "Edit Buku"}
+        onSave={handleSave}
+      >
+        <div className="field">
+          <label className="label">Judul</label>
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              name="judul"
+              value={currentBook.judul}
+              onChange={handleInputChange}
+              placeholder="Judul Buku"
+            />
+          </div>
+        </div>
+        <div className="field">
+          <label className="label">Penulis</label>
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              name="penulis"
+              value={currentBook.penulis}
+              onChange={handleInputChange}
+              placeholder="Penulis Buku"
+            />
+          </div>
+        </div>
+        <div className="field">
+          <label className="label">Penerbit</label>
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              name="penerbit"
+              value={currentBook.penerbit}
+              onChange={handleInputChange}
+              placeholder="Penerbit Buku"
+            />
+          </div>
+        </div>
+        <div className="field">
+          <label className="label">Tahun Terbit</label>
+          <div className="control">
+            <input
+              className="input"
+              type="number"
+              name="tahun_terbit"
+              value={currentBook.tahun_terbit}
+              onChange={handleInputChange}
+              placeholder="Tahun Terbit"
+            />
+          </div>
+        </div>
+        <div className="field">
+          <label className="label">Stok</label>
+          <div className="control">
+            <input
+              className="input"
+              type="number"
+              name="stok"
+              value={currentBook.stok}
+              onChange={handleInputChange}
+              placeholder="Jumlah Stok"
+            />
+          </div>
+        </div>
+      </ActionModal>
     </div>
   );
 };

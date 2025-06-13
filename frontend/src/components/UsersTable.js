@@ -1,5 +1,5 @@
 // frontend/src/components/UsersTable.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
@@ -17,7 +17,7 @@ const UsersTable = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-
+  const [searchTerm, setSearchTerm] = useState("");
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -34,6 +34,19 @@ const UsersTable = () => {
   useEffect(() => {
     fetchUsers();
   }, [currentPage]);
+
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm) {
+      return users;
+    }
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    return users.filter(
+      (user) =>
+        user.username.toLowerCase().includes(lowercasedSearchTerm) ||
+        user.email.toLowerCase().includes(lowercasedSearchTerm) ||
+        user.role.toLowerCase().includes(lowercasedSearchTerm)
+    );
+  }, [users, searchTerm]);
 
   const handleOpenModal = (user) => {
     setCurrentUser(user);
@@ -55,13 +68,14 @@ const UsersTable = () => {
       if (modalType === "add") {
         await api.post("/user", currentUser);
       } else {
-        await api.put(`/user/${currentUser.id}`, currentUser);
+        await api.patch(`/user/${currentUser.id}`, currentUser);
       }
-      if (currentUser !== 1) {
+      if (currentPage !== 1) {
         setCurrentPage(1);
       } else {
         fetchUsers();
       }
+      handleCloseModal();
     } catch (error) {
       console.error("Gagal memperbarui pengguna:", error);
     }
@@ -117,9 +131,22 @@ const UsersTable = () => {
 
   return (
     <div className="box">
-      <h2 className="title is-4">Daftar Pengguna</h2>
+      <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
+        <h2 className="title is-4">Daftar Pengguna</h2>
+        <div className="field">
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              placeholder="Cari pengguna..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
       <Table
-        data={users}
+        data={filteredUsers}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

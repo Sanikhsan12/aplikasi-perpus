@@ -1,5 +1,5 @@
 // frontend/src/components/PeminjamanTable.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
@@ -18,12 +18,12 @@ const PeminjamanTable = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-
+  const [searchTerm, setSearchTerm] = useState("");
   const fetchPeminjaman = async () => {
     try {
       setLoading(true);
       const response = await api.get(`/pinjam?page=${currentPage}&limit=10`);
-      setPeminjaman(response.data.peminjaman);
+      setPeminjaman(response.data.pinjams);
       setTotalPages(response.data.totalPages);
       setLoading(false);
     } catch (err) {
@@ -36,16 +36,27 @@ const PeminjamanTable = () => {
     fetchPeminjaman();
   }, [currentPage]);
 
-  const handleOpenModal = (type, peminjaman = null) => {
+  const filteredPeminjaman = useMemo(() => {
+    if (!searchTerm) {
+      return peminjaman;
+    }
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    return peminjaman.filter(
+      (item) =>
+        String(item.userId).includes(lowercasedSearchTerm) ||
+        String(item.bukuId).includes(lowercasedSearchTerm)
+    );
+  }, [peminjaman, searchTerm]);
+
+  const handleOpenModal = (type, peminjamanData = null) => {
     setModalType(type);
-    if (type === "edit" && peminjaman) {
-      // Format tanggal untuk input type="date"
+    if (type === "edit" && peminjamanData) {
       const formattedPinjam = {
-        ...peminjaman,
-        tanggal_pinjam: new Date(peminjaman.tanggal_pinjam)
+        ...peminjamanData,
+        tanggal_pinjam: new Date(peminjamanData.tanggal_pinjam)
           .toISOString()
           .split("T")[0],
-        tanggal_kembali: new Date(peminjaman.tanggal_kembali)
+        tanggal_kembali: new Date(peminjamanData.tanggal_kembali)
           .toISOString()
           .split("T")[0],
       };
@@ -83,11 +94,12 @@ const PeminjamanTable = () => {
       } else {
         await api.patch(`/pinjam/${currentPeminjaman.id}`, currentPeminjaman);
       }
-      if (currentPeminjaman !== 1) {
+      if (currentPage !== 1) {
         setCurrentPage(1);
       } else {
         fetchPeminjaman();
       }
+      handleCloseModal();
     } catch (error) {
       console.error("Gagal menyimpan data peminjaman:", error);
     }
@@ -163,17 +175,30 @@ const PeminjamanTable = () => {
 
   return (
     <div className="box">
-      <div className="is-flex is-justify-content-space-between is-align-items-center">
+      <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
         <h2 className="title is-4">Daftar Peminjaman</h2>
-        <button
-          className="button is-primary"
-          onClick={() => handleOpenModal("add")}
-        >
-          Tambah Peminjaman
-        </button>
+        <div className="field has-addons">
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              placeholder="Cari ID User/Buku..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="control">
+            <button
+              className="button is-primary ml-2"
+              onClick={() => handleOpenModal("add")}
+            >
+              Tambah Peminjaman
+            </button>
+          </div>
+        </div>
       </div>
       <Table
-        data={peminjaman}
+        data={filteredPeminjaman}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

@@ -1,5 +1,5 @@
 // frontend/src/components/BooksTable.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
@@ -19,7 +19,7 @@ const BooksTable = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-
+  const [searchTerm, setSearchTerm] = useState("");
   const fetchBooks = async () => {
     try {
       setLoading(true);
@@ -36,6 +36,20 @@ const BooksTable = () => {
   useEffect(() => {
     fetchBooks();
   }, [currentPage]);
+
+  const filteredBooks = useMemo(() => {
+    if (!searchTerm) {
+      return books;
+    }
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    return books.filter(
+      (book) =>
+        book.judul.toLowerCase().includes(lowercasedSearchTerm) ||
+        book.penulis.toLowerCase().includes(lowercasedSearchTerm) ||
+        book.penerbit.toLowerCase().includes(lowercasedSearchTerm) ||
+        String(book.tahun_terbit).includes(lowercasedSearchTerm)
+    );
+  }, [books, searchTerm]);
 
   const handleOpenModal = (type, book = null) => {
     setModalType(type);
@@ -139,17 +153,30 @@ const BooksTable = () => {
 
   return (
     <div className="box">
-      <div className="is-flex is-justify-content-space-between is-align-items-center">
+      <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
         <h2 className="title is-4">Daftar Buku</h2>
-        <button
-          className="button is-primary"
-          onClick={() => handleOpenModal("add")}
-        >
-          Tambah Buku
-        </button>
+        <div className="field has-addons">
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              placeholder="Cari buku..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="control">
+            <button
+              className="button is-primary ml-2"
+              onClick={() => handleOpenModal("add")}
+            >
+              Tambah Buku
+            </button>
+          </div>
+        </div>
       </div>
       <Table
-        data={books}
+        data={filteredBooks}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import AvailableBooks from "../components/AvailableBooks";
 import BorrowingHistory from "../components/BorrowingHistory";
+import "../style/App.css";
+import "bulma/css/bulma.min.css";
 
 const UserDashboard = () => {
   const [username, setUsername] = useState("");
@@ -37,9 +39,12 @@ const UserDashboard = () => {
   };
 
   return (
-    <div>
+    <div
+      className="has-background-warning-light"
+      style={{ minHeight: "100vh" }}
+    >
       <nav
-        className="navbar is-dark"
+        className="navbar has-background-warning-dark"
         role="navigation"
         aria-label="main navigation"
       >
@@ -54,7 +59,10 @@ const UserDashboard = () => {
             <div className="navbar-item">
               <p className="has-text-white mr-3">Hello, {username}</p>
               <div className="buttons">
-                <button onClick={Logout} className="button is-light">
+                <button
+                  onClick={Logout}
+                  className="button is-light has-background-danger-dark has-text-white"
+                >
                   Log Out
                 </button>
               </div>
@@ -69,12 +77,12 @@ const UserDashboard = () => {
             <ul>
               <li className={activeTab === "borrow" ? "is-active" : ""}>
                 <a onClick={() => setActiveTab("borrow")}>
-                  <span>Daftar Buku</span>
+                  <span className="has-text-white">Daftar Buku</span>
                 </a>
               </li>
               <li className={activeTab === "history" ? "is-active" : ""}>
                 <a onClick={() => setActiveTab("history")}>
-                  <span>Riwayat Peminjaman</span>
+                  <span className="has-text-white">Riwayat Peminjaman</span>
                 </a>
               </li>
             </ul>

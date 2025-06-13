@@ -17,3 +17,18 @@
 .footer.is-small-padding {
   padding: 0.5rem;
 }
+
+.tabs.is-boxed li:not(is-active) a {
+  background-color: #8b4513;
+  color: white;
+}
+
+.tabs.is-boxed li:not(is-active) a:hover {
+  background-color: rgb(171, 46, 0);
+  color: white;
+}
+
+.tabs.is-boxed li.is-active a {
+  background-color: rgb(68, 33, 1);
+  color: white;
+}

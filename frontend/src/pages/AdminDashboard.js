@@ -15,6 +15,9 @@ const AdminDashboard = () => {
   const [expire, setExpire] = useState("");
   const navigate = useNavigate();
 
+  // Tambahkan state ini
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const refreshToken = async () => {
     try {
       const response = await api.post("/token", {
@@ -38,6 +41,10 @@ const AdminDashboard = () => {
   const Logout = () => {
     localStorage.removeItem("token");
     navigate("/login");
+  };
+
+  const handleDataChange = () => {
+    setRefreshKey((prevKey) => prevKey + 1);
   };
 
   return (
@@ -91,13 +98,16 @@ const AdminDashboard = () => {
               <UsersTable />
             </div>
             <div className="column is-full">
-              <BooksTable />
+              <BooksTable key={`books-${refreshKey}`} />
             </div>
             <div className="column is-full">
-              <PeminjamanTable />
+              <PeminjamanTable
+                key={`peminjaman-${refreshKey}`}
+                onDataChange={handleDataChange}
+              />
             </div>
             <div className="column is-full">
-              <PengembalianTable />
+              <PengembalianTable key={`pengembalian-${refreshKey}`} />
             </div>
           </div>
         </div>

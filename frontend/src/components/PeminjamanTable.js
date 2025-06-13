@@ -4,7 +4,8 @@ import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
 
-const PeminjamanTable = () => {
+// Terima prop onDataChange
+const PeminjamanTable = ({ onDataChange }) => {
   const [peminjaman, setPeminjaman] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,6 +59,7 @@ const PeminjamanTable = () => {
     fetchPeminjaman();
   }, [currentPage]);
 
+  // ... (fungsi lainnya tetap sama) ...
   const handleOpenEditModal = (peminjamanData) => {
     const formattedPinjam = {
       ...peminjamanData,
@@ -97,11 +99,7 @@ const PeminjamanTable = () => {
   const handleSave = async () => {
     try {
       await api.patch(`/pinjam/${currentPeminjaman.id}`, currentPeminjaman);
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      } else {
-        fetchPeminjaman();
-      }
+      onDataChange(); // Gunakan onDataChange
       handleCloseModal();
     } catch (error) {
       console.error("Gagal menyimpan data peminjaman:", error);
@@ -116,13 +114,14 @@ const PeminjamanTable = () => {
     ) {
       try {
         await api.delete(`/pinjam/${id}`);
-        fetchPeminjaman();
+        onDataChange(); // Gunakan onDataChange
       } catch (error) {
         console.error("Gagal menghapus data peminjaman:", error);
       }
     }
   };
 
+  // Perbarui fungsi ini
   const handleConfirmReturn = async () => {
     if (!currentPeminjaman) return;
     try {
@@ -131,7 +130,7 @@ const PeminjamanTable = () => {
         kondisi_buku: returnDetails.kondisi_buku,
         denda: returnDetails.denda,
       });
-      fetchPeminjaman();
+      onDataChange(); // Panggil fungsi dari parent
       handleCloseModal();
     } catch (error) {
       console.error("Gagal memproses pengembalian:", error);
@@ -146,7 +145,7 @@ const PeminjamanTable = () => {
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
-
+  // ... (sisa kode komponen tetap sama) ...
   const columns = [
     { header: "ID", accessor: "id" },
     {

@@ -5,7 +5,6 @@ import {
   createPinjam,
   updatePinjam,
   deletePinjam,
-  returnPinjam,
   getPinjamByUserId,
 } from "../controllers/PinjamController.js";
 
@@ -19,6 +18,5 @@ router.get("/pinjam/history/:userId", getPinjamByUserId);
 router.post("/pinjam", createPinjam);
 router.patch("/pinjam/:id", updatePinjam);
 router.delete("/pinjam/:id", deletePinjam);
-router.patch("/pinjam/:id/return", returnPinjam);
 
 export default router;

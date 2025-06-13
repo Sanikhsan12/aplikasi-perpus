@@ -8,14 +8,14 @@ const PeminjamanTable = () => {
   const [peminjaman, setPeminjaman] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState("add");
-  const [currentPeminjaman, setCurrentPeminjaman] = useState({
-    tanggal_pinjam: "",
-    tanggal_kembali: "",
-    userId: "",
-    bukuId: "",
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [currentPeminjaman, setCurrentPeminjaman] = useState(null);
+  const [returnDetails, setReturnDetails] = useState({
+    kondisi_buku: "baik",
+    denda: 0,
   });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,38 +58,30 @@ const PeminjamanTable = () => {
     fetchPeminjaman();
   }, [currentPage]);
 
-  const handleOpenModal = (type, peminjamanData = null) => {
-    setModalType(type);
-    if (type === "edit" && peminjamanData) {
-      const formattedPinjam = {
-        ...peminjamanData,
-        tanggal_pinjam: new Date(peminjamanData.tanggal_pinjam)
-          .toISOString()
-          .split("T")[0],
-        tanggal_kembali: new Date(peminjamanData.tanggal_kembali)
-          .toISOString()
-          .split("T")[0],
-      };
-      setCurrentPeminjaman(formattedPinjam);
-    } else {
-      setCurrentPeminjaman({
-        tanggal_pinjam: "",
-        tanggal_kembali: "",
-        userId: "",
-        bukuId: "",
-      });
-    }
-    setIsModalOpen(true);
+  const handleOpenEditModal = (peminjamanData) => {
+    const formattedPinjam = {
+      ...peminjamanData,
+      tanggal_pinjam: new Date(peminjamanData.tanggal_pinjam)
+        .toISOString()
+        .split("T")[0],
+      tanggal_kembali: new Date(peminjamanData.tanggal_kembali)
+        .toISOString()
+        .split("T")[0],
+    };
+    setCurrentPeminjaman(formattedPinjam);
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenReturnModal = (peminjamanData) => {
+    setCurrentPeminjaman(peminjamanData);
+    setIsReturnModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setCurrentPeminjaman({
-      tanggal_pinjam: "",
-      tanggal_kembali: "",
-      userId: "",
-      bukuId: "",
-    });
+    setIsEditModalOpen(false);
+    setIsReturnModalOpen(false);
+    setCurrentPeminjaman(null);
+    setReturnDetails({ kondisi_buku: "baik", denda: 0 });
   };
 
   const handleInputChange = (e) => {
@@ -97,13 +89,14 @@ const PeminjamanTable = () => {
     setCurrentPeminjaman({ ...currentPeminjaman, [name]: value });
   };
 
+  const handleReturnInputChange = (e) => {
+    const { name, value } = e.target;
+    setReturnDetails({ ...returnDetails, [name]: value });
+  };
+
   const handleSave = async () => {
     try {
-      if (modalType === "add") {
-        await api.post("/pinjam", currentPeminjaman);
-      } else {
-        await api.patch(`/pinjam/${currentPeminjaman.id}`, currentPeminjaman);
-      }
+      await api.patch(`/pinjam/${currentPeminjaman.id}`, currentPeminjaman);
       if (currentPage !== 1) {
         setCurrentPage(1);
       } else {
@@ -117,7 +110,9 @@ const PeminjamanTable = () => {
 
   const handleDelete = async (id) => {
     if (
-      window.confirm("Apakah Anda yakin ingin menghapus data peminjaman ini?")
+      window.confirm(
+        "Apakah Anda yakin ingin menghapus data peminjaman ini? Ini akan mengembalikan stok buku."
+      )
     ) {
       try {
         await api.delete(`/pinjam/${id}`);
@@ -128,14 +123,19 @@ const PeminjamanTable = () => {
     }
   };
 
-  const handleReturn = async (id) => {
-    if (window.confirm("Apakah Anda yakin buku ini telah dikembalikan?")) {
-      try {
-        await api.patch(`/pinjam/${id}/return`);
-        fetchPeminjaman();
-      } catch (error) {
-        console.error("Gagal memproses pengembalian:", error);
-      }
+  const handleConfirmReturn = async () => {
+    if (!currentPeminjaman) return;
+    try {
+      await api.post("/pengembalian", {
+        pinjamId: currentPeminjaman.id,
+        kondisi_buku: returnDetails.kondisi_buku,
+        denda: returnDetails.denda,
+      });
+      fetchPeminjaman();
+      handleCloseModal();
+    } catch (error) {
+      console.error("Gagal memproses pengembalian:", error);
+      alert(error.response?.data?.message || "Terjadi kesalahan");
     }
   };
 
@@ -149,17 +149,26 @@ const PeminjamanTable = () => {
 
   const columns = [
     { header: "ID", accessor: "id" },
-    { header: "Tanggal Pinjam", accessor: "tanggal_pinjam" },
-    { header: "Tanggal Kembali", accessor: "tanggal_kembali" },
-    { header: "Username", accessor: "user.username" },
-    { header: "Judul Buku", accessor: "buku.judul" },
+    {
+      header: "Tanggal Pinjam",
+      accessor: "tanggal_pinjam",
+      render: (row) => new Date(row.tanggal_pinjam).toLocaleDateString("id-ID"),
+    },
+    {
+      header: "Tanggal Kembali",
+      accessor: "tanggal_kembali",
+      render: (row) =>
+        new Date(row.tanggal_kembali).toLocaleDateString("id-ID"),
+    },
+    { header: "Username", accessor: (row) => row.user?.username || "N/A" },
+    { header: "Judul Buku", accessor: (row) => row.buku?.judul || "N/A" },
     {
       header: "Aksi",
       render: (row) => (
         <>
           <button
             className="button is-small is-info mr-2"
-            onClick={() => handleOpenModal("edit", row)}
+            onClick={() => handleOpenEditModal(row)}
           >
             Edit
           </button>
@@ -171,7 +180,7 @@ const PeminjamanTable = () => {
           </button>
           <button
             className="button is-small is-success"
-            onClick={() => handleReturn(row.id)}
+            onClick={() => handleOpenReturnModal(row)}
           >
             Kembalikan
           </button>
@@ -197,14 +206,6 @@ const PeminjamanTable = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="control">
-            <button
-              className="button is-primary ml-2"
-              onClick={() => handleOpenModal("add")}
-            >
-              Tambah Peminjaman
-            </button>
-          </div>
         </div>
       </div>
       <Table
@@ -216,63 +217,86 @@ const PeminjamanTable = () => {
         onPrevPage={handlePrevPage}
       />
 
-      <ActionModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title={modalType === "add" ? "Tambah Peminjaman" : "Edit Peminjaman"}
-        onSave={handleSave}
-      >
-        <div className="field">
-          <label className="label">Tanggal Pinjam</label>
-          <div className="control">
-            <input
-              className="input"
-              type="date"
-              name="tanggal_pinjam"
-              value={currentPeminjaman.tanggal_pinjam}
-              onChange={handleInputChange}
-            />
+      {/* Edit Modal */}
+      {currentPeminjaman && (
+        <ActionModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseModal}
+          title="Edit Peminjaman"
+          onSave={handleSave}
+        >
+          <div className="field">
+            <label className="label">Tanggal Pinjam</label>
+            <div className="control">
+              <input
+                className="input"
+                type="date"
+                name="tanggal_pinjam"
+                value={currentPeminjaman.tanggal_pinjam}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
-        </div>
-        <div className="field">
-          <label className="label">Tanggal Kembali</label>
-          <div className="control">
-            <input
-              className="input"
-              type="date"
-              name="tanggal_kembali"
-              value={currentPeminjaman.tanggal_kembali}
-              onChange={handleInputChange}
-            />
+          <div className="field">
+            <label className="label">Tanggal Kembali</label>
+            <div className="control">
+              <input
+                className="input"
+                type="date"
+                name="tanggal_kembali"
+                value={currentPeminjaman.tanggal_kembali}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
-        </div>
-        <div className="field">
-          <label className="label">ID User</label>
-          <div className="control">
-            <input
-              className="input"
-              type="number"
-              name="userId"
-              value={currentPeminjaman.userId}
-              onChange={handleInputChange}
-              placeholder="ID Pengguna"
-            />
+        </ActionModal>
+      )}
+
+      {/* Return Modal */}
+      {currentPeminjaman && (
+        <ActionModal
+          isOpen={isReturnModalOpen}
+          onClose={handleCloseModal}
+          title="Konfirmasi Pengembalian"
+          onSave={handleConfirmReturn}
+          saveButtonText="Konfirmasi"
+        >
+          <p>
+            Anda akan mengembalikan buku{" "}
+            <strong>{currentPeminjaman.buku?.judul}</strong> yang dipinjam oleh{" "}
+            <strong>{currentPeminjaman.user?.username}</strong>.
+          </p>
+          <div className="field mt-4">
+            <label className="label">Kondisi Buku</label>
+            <div className="control">
+              <div className="select is-fullwidth">
+                <select
+                  name="kondisi_buku"
+                  value={returnDetails.kondisi_buku}
+                  onChange={handleReturnInputChange}
+                >
+                  <option value="baik">Baik</option>
+                  <option value="rusak ringan">Rusak Ringan</option>
+                  <option value="rusak berat">Rusak Berat</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="field">
-          <label className="label">ID Buku</label>
-          <div className="control">
-            <input
-              className="input"
-              type="number"
-              name="bukuId"
-              value={currentPeminjaman.bukuId}
-              onChange={handleInputChange}
-              placeholder="ID Buku"
-            />
+          <div className="field">
+            <label className="label">Denda (jika ada)</label>
+            <div className="control">
+              <input
+                className="input"
+                type="number"
+                name="denda"
+                value={returnDetails.denda}
+                onChange={handleReturnInputChange}
+                placeholder="Jumlah Denda"
+              />
+            </div>
           </div>
-        </div>
-      </ActionModal>
+        </ActionModal>
+      )}
     </div>
   );
 };

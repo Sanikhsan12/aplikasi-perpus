@@ -36,6 +36,11 @@ const Pinjam = db.define(
         key: "id",
       },
     },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "dipinjam", // 'dipinjam' atau 'dikembalikan'
+    },
   },
   {
     freezeTableName: true,

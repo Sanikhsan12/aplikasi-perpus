@@ -46,7 +46,11 @@ export const getPengembalians = async (req, res) => {
 export const getPengembalianById = async (req, res) => {
   try {
     const pengembalian = await Pengembalian.findByPk(req.params.id, {
-      include: [{ model: Pinjam }, { model: Buku }, { model: User }],
+      include: [
+        { model: Pinjam, as: "pinjam" },
+        { model: Buku, as: "buku" },
+        { model: User, as: "user" },
+      ],
     });
     if (pengembalian) {
       res.json(pengembalian);
@@ -59,11 +63,10 @@ export const getPengembalianById = async (req, res) => {
 };
 
 export const createPengembalian = async (req, res) => {
-  const { pinjamId, userId, kondisi_buku, denda } = req.body;
-  const t = await db.transaction(); // Mulai transaksi
+  const { pinjamId, kondisi_buku, denda } = req.body;
+  const t = await db.transaction();
 
   try {
-    // 1. Verifikasi catatan peminjaman
     const pinjam = await Pinjam.findByPk(pinjamId, { transaction: t });
     if (!pinjam) {
       await t.rollback();
@@ -72,41 +75,38 @@ export const createPengembalian = async (req, res) => {
         .json({ message: "Catatan peminjaman tidak ditemukan" });
     }
 
-    // Pastikan buku belum dikembalikan (cek di tabel Pengembalian)
-    const existingPengembalian = await Pengembalian.findOne({
-      where: { pinjamId: pinjamId },
-      transaction: t,
-    });
-    if (existingPengembalian) {
+    if (pinjam.status === "dikembalikan") {
       await t.rollback();
-      return res.status(400).json({ message: "Buku sudah dikembalikan" });
+      return res.status(400).json({ message: "Buku ini sudah dikembalikan." });
     }
 
-    // 2. Tambah stok buku
-    const buku = await Buku.findByPk(pinjam.bukuId, { transaction: t });
-    if (!buku) {
-      await t.rollback();
-      return res.status(404).json({ message: "Buku terkait tidak ditemukan" });
-    }
-    await Buku.update(
-      { stok: buku.stok + 1 },
-      { where: { id: pinjam.bukuId }, transaction: t }
-    );
+    await Buku.increment("stok", {
+      by: 1,
+      where: { id: pinjam.bukuId },
+      transaction: t,
+    });
 
     const newPengembalian = await Pengembalian.create(
       {
         pinjamId,
-        userId, // userId ini adalah user yang mengembalikan, bisa berbeda dengan pinjam.userId
-        bukuId: pinjam.bukuId, // Pastikan bukuId dari catatan pinjam
+        userId: pinjam.userId,
+        bukuId: pinjam.bukuId,
+        tanggal_pengembalian: new Date(),
         kondisi_buku,
-        denda: denda || 0, // Default denda 0 jika tidak disertakan
+        denda: denda || 0,
       },
       { transaction: t }
     );
-    await t.commit(); // Commit transaksi
+
+    await Pinjam.update(
+      { status: "dikembalikan" },
+      { where: { id: pinjamId }, transaction: t }
+    );
+
+    await t.commit();
     res.status(201).json(newPengembalian);
   } catch (error) {
-    await t.rollback(); // Rollback jika ada error
+    await t.rollback();
     console.error("Error creating pengembalian:", error);
     res.status(400).json({ message: error.message });
   }

@@ -4,6 +4,7 @@ import Pinjam from "../models/PinjamModel.js";
 import Buku from "../models/BookModel.js";
 import db from "../config/Database.js";
 import User from "../models/UserModel.js";
+import Pengembalian from "../models/PengembalianModel.js";
 
 export const getPinjams = async (req, res) => {
   try {
@@ -12,19 +13,28 @@ export const getPinjams = async (req, res) => {
     const search = req.query.search || "";
     const offset = (page - 1) * limit;
 
-    const where = {
-      [Op.or]: [
-        { "$user.username$": { [Op.like]: `%${search}%` } },
-        { "$buku.judul$": { [Op.like]: `%${search}%` } },
-      ],
+    let where = {
+      status: "dipinjam",
     };
+
+    if (search) {
+      where[Op.and] = [
+        { status: "dipinjam" },
+        {
+          [Op.or]: [
+            { "$user.username$": { [Op.like]: `%${search}%` } },
+            { "$buku.judul$": { [Op.like]: `%${search}%` } },
+          ],
+        },
+      ];
+    }
 
     const { count, rows } = await Pinjam.findAndCountAll({
       include: [
-        { model: User, as: "user" },
-        { model: Buku, as: "buku" },
+        { model: User, as: "user", attributes: ["username"] },
+        { model: Buku, as: "buku", attributes: ["judul"] },
       ],
-      where: search ? where : {},
+      where: where,
       limit: limit,
       offset: offset,
     });
@@ -41,7 +51,12 @@ export const getPinjams = async (req, res) => {
 
 export const getPinjamById = async (req, res) => {
   try {
-    const pinjam = await Pinjam.findByPk(req.params.id);
+    const pinjam = await Pinjam.findByPk(req.params.id, {
+      include: [
+        { model: User, as: "user" },
+        { model: Buku, as: "buku" },
+      ],
+    });
     if (pinjam) {
       res.json(pinjam);
     } else {
@@ -70,10 +85,9 @@ export const getPinjamByUserId = async (req, res) => {
 
 export const createPinjam = async (req, res) => {
   const { tanggal_pinjam, tanggal_kembali, userId, bukuId } = req.body;
-  const t = await db.transaction(); // Start a transaction
+  const t = await db.transaction();
 
   try {
-    // 1. Cek ketersediaan buku
     const book = await Buku.findByPk(bukuId, { transaction: t });
     if (!book) {
       await t.rollback();
@@ -84,27 +98,26 @@ export const createPinjam = async (req, res) => {
       return res.status(400).json({ message: "Stok buku tidak tersedia" });
     }
 
-    // 2. Kurangi stok buku
     await Buku.update(
       { stok: book.stok - 1 },
       { where: { id: bukuId }, transaction: t }
     );
 
-    // 3. Buat catatan peminjaman
     const newPinjam = await Pinjam.create(
       {
         tanggal_pinjam,
         tanggal_kembali,
         userId,
         bukuId,
+        status: "dipinjam", // Tambahkan ini
       },
       { transaction: t }
     );
 
-    await t.commit(); // Commit the transaction
+    await t.commit();
     res.status(201).json(newPinjam);
   } catch (error) {
-    await t.rollback(); // Rollback the transaction if any error occurs
+    await t.rollback();
     console.error("Error creating pinjam:", error);
     res.status(400).json({ message: error.message });
   }
@@ -127,54 +140,38 @@ export const updatePinjam = async (req, res) => {
 };
 
 export const deletePinjam = async (req, res) => {
-  try {
-    const deleted = await Pinjam.destroy({
-      where: { id: req.params.id },
-    });
-    if (deleted) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ message: "Pinjam not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const returnPinjam = async (req, res) => {
   const { id } = req.params;
   const t = await db.transaction();
-
   try {
     const pinjam = await Pinjam.findByPk(id, { transaction: t });
     if (!pinjam) {
       await t.rollback();
       return res
         .status(404)
-        .json({ message: "Catatan peminjaman tidak ditemukan" });
+        .json({ message: "Catatan peminjaman tidak ditemukan." });
     }
 
-    const book = await Buku.findByPk(pinjam.bukuId, { transaction: t });
-    if (!book) {
+    // Kembalikan stok buku
+    await Buku.increment("stok", {
+      by: 1,
+      where: { id: pinjam.bukuId },
+      transaction: t,
+    });
+
+    const deleted = await Pinjam.destroy({
+      where: { id: id },
+      transaction: t,
+    });
+
+    if (deleted) {
+      await t.commit();
+      res.status(204).send();
+    } else {
       await t.rollback();
-      return res.status(404).json({ message: "Buku terkait tidak ditemukan" });
+      res.status(404).json({ message: "Pinjam not found" });
     }
-    await Buku.update(
-      { stok: book.stok - 1 },
-      { where: { id: pinjam.bukuId }, transaction: t }
-    );
-    await Pinjam.update(
-      { tanggal_kembali: new Date() },
-      { where: { id: id }, transaction: t }
-    );
-
-    await t.commit();
-    res
-      .status(200)
-      .json({ message: "Buku berhasil dikembalikan dan stok diperbarui" });
   } catch (error) {
     await t.rollback();
-    console.error("Error returning pinjam:", error);
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };

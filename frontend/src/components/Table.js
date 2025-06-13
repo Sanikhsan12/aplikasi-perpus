@@ -2,6 +2,13 @@
 import React from "react";
 import "bulma/css/bulma.min.css";
 
+const getNestedValue = (obj, path) => {
+  if (typeof path === "function") {
+    return path(obj);
+  }
+  return path.split(".").reduce((acc, part) => acc && acc[part], obj);
+};
+
 const Table = ({
   data,
   columns,
@@ -30,7 +37,9 @@ const Table = ({
               <tr key={rowIndex}>
                 {columns.map((col, colIndex) => (
                   <td key={colIndex}>
-                    {col.render ? col.render(row) : row[col.accessor]}
+                    {col.render
+                      ? col.render(row)
+                      : getNestedValue(row, col.accessor)}
                   </td>
                 ))}
               </tr>

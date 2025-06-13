@@ -11,6 +11,10 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
+  // State untuk Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+
   // State untuk Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
@@ -22,9 +26,10 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
     try {
       setLoading(true);
       const response = await api.get(
-        `/book?limit=100&search=${debouncedSearchTerm}`
+        `/book?page=${currentPage}&limit=8&search=${debouncedSearchTerm}`
       );
       setBooks(response.data.books.filter((book) => book.stok > 0));
+      setTotalPages(response.data.totalPages);
       setLoading(false);
     } catch (err) {
       setError(err);
@@ -43,8 +48,13 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
   }, [searchTerm]);
 
   useEffect(() => {
-    fetchBooks();
+    // Kembali ke halaman 1 setiap kali ada pencarian baru
+    setCurrentPage(1);
   }, [debouncedSearchTerm]);
+
+  useEffect(() => {
+    fetchBooks();
+  }, [debouncedSearchTerm, currentPage]);
 
   const handleOpenModal = (book) => {
     setSelectedBook(book);
@@ -82,17 +92,24 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
 
       setBorrowMessage("Buku berhasil dipinjam!");
 
-      // Tutup modal setelah jeda singkat
       setTimeout(() => {
         handleCloseModal();
-        fetchBooks(); // Muat ulang daftar buku yang tersedia
+        fetchBooks();
         if (onBorrowSuccess) {
-          onBorrowSuccess(); // Picu pembaruan riwayat
+          onBorrowSuccess();
         }
       }, 1500);
     } catch (err) {
       setBorrowError(err.response?.data?.message || "Gagal meminjam buku.");
     }
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   if (loading) return <p>Memuat buku...</p>;
@@ -148,9 +165,47 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
             </div>
           ))
         ) : (
-          <p>Tidak ada buku yang tersedia atau cocok dengan pencarian Anda.</p>
+          <div className="column">
+            <p>
+              Tidak ada buku yang tersedia atau cocok dengan pencarian Anda.
+            </p>
+          </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <nav
+          className="pagination is-centered mt-5"
+          role="navigation"
+          aria-label="pagination"
+        >
+          <button
+            className="pagination-previous"
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+          >
+            Sebelumnya
+          </button>
+          <button
+            className="pagination-next"
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Selanjutnya
+          </button>
+          <ul className="pagination-list">
+            <li>
+              <span
+                className="pagination-link is-current"
+                aria-label={`Halaman ${currentPage}`}
+                aria-current="page"
+              >
+                Halaman {currentPage} dari {totalPages}
+              </span>
+            </li>
+          </ul>
+        </nav>
+      )}
 
       {selectedBook && (
         <ActionModal

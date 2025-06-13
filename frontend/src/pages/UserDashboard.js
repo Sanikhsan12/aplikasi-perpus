@@ -1,24 +1,34 @@
+// frontend/src/pages/UserDashboard.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api";
 import { jwtDecode } from "jwt-decode";
 import AvailableBooks from "../components/AvailableBooks";
 import BorrowingHistory from "../components/BorrowingHistory";
-import BorrowBook from "../components/BorrowBook";
 
 const UserDashboard = () => {
   const [username, setUsername] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      const decoded = jwtDecode(token);
-      setUsername(decoded.username);
+      try {
+        const decoded = jwtDecode(token);
+        setUsername(decoded.username);
+      } catch (error) {
+        console.error("Failed to decode token:", error);
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
     } else {
       navigate("/login");
     }
   }, [navigate]);
+
+  const handleBorrowSuccess = () => {
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
 
   const Logout = () => {
     localStorage.removeItem("token");
@@ -56,13 +66,10 @@ const UserDashboard = () => {
         <div className="container">
           <div className="columns is-multiline">
             <div className="column is-full">
-              <BorrowBook />
+              <AvailableBooks onBorrowSuccess={handleBorrowSuccess} />
             </div>
             <div className="column is-full">
-              <AvailableBooks />
-            </div>
-            <div className="column is-full">
-              <BorrowingHistory />
+              <BorrowingHistory key={refreshKey} />
             </div>
           </div>
         </div>

@@ -52,6 +52,22 @@ export const getPinjamById = async (req, res) => {
   }
 };
 
+export const getPinjamByUserId = async (req, res) => {
+  try {
+    const pinjams = await Pinjam.findAll({
+      where: { userId: req.params.userId },
+      include: [
+        { model: User, as: "user" },
+        { model: Buku, as: "buku" },
+      ],
+      order: [["tanggal_pinjam", "DESC"]],
+    });
+    res.json(pinjams);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const createPinjam = async (req, res) => {
   const { tanggal_pinjam, tanggal_kembali, userId, bukuId } = req.body;
   const t = await db.transaction(); // Start a transaction

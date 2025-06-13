@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios"; // Keep axios for direct login call
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import "bulma/css/bulma.min.css";
 
 const LoginPage = () => {
@@ -16,8 +17,19 @@ const LoginPage = () => {
         email: email,
         password: password,
       });
-      localStorage.setItem("token", response.data.token); // Store the token
-      navigate("/adminDashboard");
+      const token = response.data.token;
+      localStorage.setItem("token", token);
+
+      const decoded = jwtDecode(token);
+
+      // role chek
+      if (decoded.role === "admin") {
+        navigate("/adminDashboard");
+      } else if (decoded.role === "user") {
+        navigate("/userDashboard");
+      } else {
+        setMsg("Role tidak dikenali");
+      }
     } catch (error) {
       if (error.response) {
         setMsg(error.response.data.message);

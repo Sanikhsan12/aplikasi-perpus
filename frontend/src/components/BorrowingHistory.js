@@ -31,11 +31,11 @@ const BorrowingHistory = () => {
   if (error) return <p>Terjadi kesalahan: {error.message}</p>;
 
   return (
-    <div className="box">
+    <div className="box has-background-danger-dark">
       <h2 className="title is-4">Riwayat Peminjaman Anda</h2>
       {history.length > 0 ? (
         history.map((item) => (
-          <div key={item.id} className="box">
+          <div key={item.id} className="box has-background-warning-dark">
             <p>
               <strong>Judul Buku:</strong> {item.buku.judul}
             </p>

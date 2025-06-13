@@ -116,7 +116,7 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
   if (error) return <p>Terjadi kesalahan: {error.message}</p>;
 
   return (
-    <div className="box">
+    <div className="box has-background-warning-dark has-text-white">
       <h2 className="title is-4">Buku yang Tersedia</h2>
       <div className="field">
         <div className="control">
@@ -133,7 +133,7 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
         {books.length > 0 ? (
           books.map((book) => (
             <div key={book.id} className="column is-one-quarter">
-              <div className="card">
+              <div className="card has-background-warning-dark">
                 <div className="card-content">
                   <p className="title is-5">{book.judul}</p>
                   <p className="subtitle is-6">oleh {book.penulis}</p>
@@ -152,7 +152,7 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
                 <footer className="card-footer">
                   <a
                     href="#"
-                    className="card-footer-item"
+                    className="card-footer-item has-background-warning-dark has-text-white"
                     onClick={(e) => {
                       e.preventDefault();
                       handleOpenModal(book);
@@ -196,7 +196,7 @@ const AvailableBooks = ({ onBorrowSuccess }) => {
           <ul className="pagination-list">
             <li>
               <span
-                className="pagination-link is-current"
+                className="pagination-link is-current has-background-danger-dark has-text-white"
                 aria-label={`Halaman ${currentPage}`}
                 aria-current="page"
               >

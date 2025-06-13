@@ -1,5 +1,5 @@
 // frontend/src/components/PeminjamanTable.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
@@ -19,10 +19,24 @@ const PeminjamanTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
   const fetchPeminjaman = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/pinjam?page=${currentPage}&limit=10`);
+      const response = await api.get(
+        `/pinjam?page=${currentPage}&limit=10&search=${debouncedSearchTerm}`
+      );
       setPeminjaman(response.data.pinjams);
       setTotalPages(response.data.totalPages);
       setLoading(false);
@@ -33,20 +47,16 @@ const PeminjamanTable = () => {
   };
 
   useEffect(() => {
+    if (currentPage === 1) {
+      fetchPeminjaman();
+    } else {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm]);
+
+  useEffect(() => {
     fetchPeminjaman();
   }, [currentPage]);
-
-  const filteredPeminjaman = useMemo(() => {
-    if (!searchTerm) {
-      return peminjaman;
-    }
-    const lowercasedSearchTerm = searchTerm.toLowerCase();
-    return peminjaman.filter(
-      (item) =>
-        String(item.userId).includes(lowercasedSearchTerm) ||
-        String(item.bukuId).includes(lowercasedSearchTerm)
-    );
-  }, [peminjaman, searchTerm]);
 
   const handleOpenModal = (type, peminjamanData = null) => {
     setModalType(type);
@@ -141,8 +151,8 @@ const PeminjamanTable = () => {
     { header: "ID", accessor: "id" },
     { header: "Tanggal Pinjam", accessor: "tanggal_pinjam" },
     { header: "Tanggal Kembali", accessor: "tanggal_kembali" },
-    { header: "ID User", accessor: "userId" },
-    { header: "ID Buku", accessor: "bukuId" },
+    { header: "Username", accessor: "user.username" },
+    { header: "Judul Buku", accessor: "buku.judul" },
     {
       header: "Aksi",
       render: (row) => (
@@ -182,7 +192,7 @@ const PeminjamanTable = () => {
             <input
               className="input"
               type="text"
-              placeholder="Cari ID User/Buku..."
+              placeholder="Cari Username/Judul Buku..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -198,7 +208,7 @@ const PeminjamanTable = () => {
         </div>
       </div>
       <Table
-        data={filteredPeminjaman}
+        data={peminjaman}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

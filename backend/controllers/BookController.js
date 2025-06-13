@@ -1,12 +1,24 @@
+// backend/controllers/BookController.js
+import { Op } from "sequelize";
 import Buku from "../models/BookModel.js";
 
 export const getBooks = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
     const offset = (page - 1) * limit;
 
+    const where = {
+      [Op.or]: [
+        { judul: { [Op.like]: `%${search}%` } },
+        { penulis: { [Op.like]: `%${search}%` } },
+        { penerbit: { [Op.like]: `%${search}%` } },
+      ],
+    };
+
     const { count, rows } = await Buku.findAndCountAll({
+      where: search ? where : {},
       limit: limit,
       offset: offset,
     });

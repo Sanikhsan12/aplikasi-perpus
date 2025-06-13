@@ -1,5 +1,5 @@
 // frontend/src/components/PengembalianTable.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import Table from "./Table";
 
@@ -9,42 +9,45 @@ const PengembalianTable = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchTerm, setSearchTerm] = useState(""); // State untuk pencarian
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   useEffect(() => {
-    const fetchPengembalian = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(
-          `/pengembalian?page=${currentPage}&limit=10`
-        );
-        setPengembalian(response.data.pengembalians); // <-- Disesuaikan dengan response API
-        setTotalPages(response.data.totalPages);
-        setLoading(false);
-      } catch (err) {
-        setError(err);
-        setLoading(false);
-      }
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
     };
+  }, [searchTerm]);
+
+  const fetchPengembalian = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(
+        `/pengembalian?page=${currentPage}&limit=10&search=${debouncedSearchTerm}`
+      );
+      setPengembalian(response.data.pengembalians);
+      setTotalPages(response.data.totalPages);
+      setLoading(false);
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentPage === 1) {
+      fetchPengembalian();
+    } else {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm]);
+
+  useEffect(() => {
     fetchPengembalian();
   }, [currentPage]);
-
-  // Filter data pengembalian berdasarkan searchTerm
-  const filteredPengembalian = useMemo(() => {
-    if (!searchTerm) {
-      return pengembalian;
-    }
-    const lowercasedSearchTerm = searchTerm.toLowerCase();
-    return pengembalian.filter(
-      (item) =>
-        String(item.id).includes(lowercasedSearchTerm) ||
-        String(item.pinjamId).includes(lowercasedSearchTerm) ||
-        String(item.userId).includes(lowercasedSearchTerm) ||
-        String(item.bukuId).includes(lowercasedSearchTerm) ||
-        (item.kondisi_buku &&
-          item.kondisi_buku.toLowerCase().includes(lowercasedSearchTerm))
-    );
-  }, [pengembalian, searchTerm]);
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -57,8 +60,8 @@ const PengembalianTable = () => {
   const columns = [
     { header: "ID", accessor: "id" },
     { header: "ID Peminjaman", accessor: "pinjamId" },
-    { header: "ID User", accessor: "userId" },
-    { header: "ID Buku", accessor: "bukuId" },
+    { header: "Username", accessor: "user.username" },
+    { header: "Judul Buku", accessor: "buku.judul" },
     { header: "Tanggal Pengembalian", accessor: "tanggal_pengembalian" },
     { header: "Kondisi Buku", accessor: "kondisi_buku" },
     { header: "Denda", accessor: "denda" },
@@ -84,7 +87,7 @@ const PengembalianTable = () => {
         </div>
       </div>
       <Table
-        data={filteredPengembalian}
+        data={pengembalian}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

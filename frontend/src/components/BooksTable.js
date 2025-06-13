@@ -1,5 +1,5 @@
 // frontend/src/components/BooksTable.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
@@ -20,10 +20,24 @@ const BooksTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/book?page=${currentPage}&limit=10`);
+      const response = await api.get(
+        `/book?page=${currentPage}&limit=10&search=${debouncedSearchTerm}`
+      );
       setBooks(response.data.books);
       setTotalPages(response.data.totalPages);
       setLoading(false);
@@ -34,22 +48,16 @@ const BooksTable = () => {
   };
 
   useEffect(() => {
+    if (currentPage === 1) {
+      fetchBooks();
+    } else {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm]);
+
+  useEffect(() => {
     fetchBooks();
   }, [currentPage]);
-
-  const filteredBooks = useMemo(() => {
-    if (!searchTerm) {
-      return books;
-    }
-    const lowercasedSearchTerm = searchTerm.toLowerCase();
-    return books.filter(
-      (book) =>
-        book.judul.toLowerCase().includes(lowercasedSearchTerm) ||
-        book.penulis.toLowerCase().includes(lowercasedSearchTerm) ||
-        book.penerbit.toLowerCase().includes(lowercasedSearchTerm) ||
-        String(book.tahun_terbit).includes(lowercasedSearchTerm)
-    );
-  }, [books, searchTerm]);
 
   const handleOpenModal = (type, book = null) => {
     setModalType(type);
@@ -176,7 +184,7 @@ const BooksTable = () => {
         </div>
       </div>
       <Table
-        data={filteredBooks}
+        data={books}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

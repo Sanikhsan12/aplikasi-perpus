@@ -1,5 +1,5 @@
 // frontend/src/components/UsersTable.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import Table from "./Table";
 import ActionModal from "./ActionModal";
@@ -9,7 +9,7 @@ const UsersTable = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState("add");
+  const [modalType] = useState("add");
   const [currentUser, setCurrentUser] = useState({
     username: "",
     email: "",
@@ -18,10 +18,24 @@ const UsersTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/user?page=${currentPage}&limit=10`);
+      const response = await api.get(
+        `/user?page=${currentPage}&limit=10&search=${debouncedSearchTerm}`
+      );
       setUsers(response.data.users);
       setTotalPages(response.data.totalPages);
       setLoading(false);
@@ -32,21 +46,16 @@ const UsersTable = () => {
   };
 
   useEffect(() => {
+    if (currentPage === 1) {
+      fetchUsers();
+    } else {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm]);
+
+  useEffect(() => {
     fetchUsers();
   }, [currentPage]);
-
-  const filteredUsers = useMemo(() => {
-    if (!searchTerm) {
-      return users;
-    }
-    const lowercasedSearchTerm = searchTerm.toLowerCase();
-    return users.filter(
-      (user) =>
-        user.username.toLowerCase().includes(lowercasedSearchTerm) ||
-        user.email.toLowerCase().includes(lowercasedSearchTerm) ||
-        user.role.toLowerCase().includes(lowercasedSearchTerm)
-    );
-  }, [users, searchTerm]);
 
   const handleOpenModal = (user) => {
     setCurrentUser(user);
@@ -146,7 +155,7 @@ const UsersTable = () => {
         </div>
       </div>
       <Table
-        data={filteredUsers}
+        data={users}
         columns={columns}
         currentPage={currentPage}
         totalPages={totalPages}

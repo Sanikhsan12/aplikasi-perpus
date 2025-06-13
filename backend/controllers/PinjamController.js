@@ -1,14 +1,30 @@
+// backend/controllers/PinjamController.js
+import { Op } from "sequelize";
 import Pinjam from "../models/PinjamModel.js";
 import Buku from "../models/BookModel.js";
 import db from "../config/Database.js";
+import User from "../models/UserModel.js";
 
 export const getPinjams = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
     const offset = (page - 1) * limit;
 
+    const where = {
+      [Op.or]: [
+        { "$user.username$": { [Op.like]: `%${search}%` } },
+        { "$buku.judul$": { [Op.like]: `%${search}%` } },
+      ],
+    };
+
     const { count, rows } = await Pinjam.findAndCountAll({
+      include: [
+        { model: User, as: "user" },
+        { model: Buku, as: "buku" },
+      ],
+      where: search ? where : {},
       limit: limit,
       offset: offset,
     });
@@ -128,7 +144,7 @@ export const returnPinjam = async (req, res) => {
       return res.status(404).json({ message: "Buku terkait tidak ditemukan" });
     }
     await Buku.update(
-      { stok: book.stok + 1 },
+      { stok: book.stok - 1 },
       { where: { id: pinjam.bukuId }, transaction: t }
     );
     await Pinjam.update(

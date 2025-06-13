@@ -1,12 +1,24 @@
+// backend/controllers/UserController.js
+import { Op } from "sequelize";
 import user from "../models/UserModel.js";
 
 export const getUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
     const offset = (page - 1) * limit;
 
+    const where = {
+      [Op.or]: [
+        { username: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { role: { [Op.like]: `%${search}%` } },
+      ],
+    };
+
     const { count, rows } = await user.findAndCountAll({
+      where: search ? where : {},
       limit: limit,
       offset: offset,
     });

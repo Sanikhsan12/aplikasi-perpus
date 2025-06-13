@@ -48,7 +48,7 @@ const AdminDashboard = () => {
         aria-label="main navigation"
       >
         <div className="navbar-brand">
-          <a className="navbar-item" href="/dashboard">
+          <a className="navbar-item" href="/adminDashboard">
             <h1 className="title is-4 has-text-white">Admin Dashboard</h1>
           </a>
           <a

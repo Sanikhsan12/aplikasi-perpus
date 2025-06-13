@@ -2,8 +2,20 @@ import Buku from "../models/BookModel.js";
 
 export const getBooks = async (req, res) => {
   try {
-    const books = await Buku.findAll();
-    res.json(books);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Buku.findAndCountAll({
+      limit: limit,
+      offset: offset,
+    });
+    res.json({
+      totalItems: count,
+      books: rows,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

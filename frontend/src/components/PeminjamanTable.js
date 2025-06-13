@@ -16,12 +16,15 @@ const PeminjamanTable = () => {
     userId: "",
     bukuId: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchPeminjaman = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/pinjam");
-      setPeminjaman(response.data);
+      const response = await api.get(`/pinjam?page=${currentPage}&limit=10`);
+      setPeminjaman(response.data.peminjaman);
+      setTotalPages(response.data.totalPages);
       setLoading(false);
     } catch (err) {
       setError(err);
@@ -31,7 +34,7 @@ const PeminjamanTable = () => {
 
   useEffect(() => {
     fetchPeminjaman();
-  }, []);
+  }, [currentPage]);
 
   const handleOpenModal = (type, peminjaman = null) => {
     setModalType(type);
@@ -80,8 +83,11 @@ const PeminjamanTable = () => {
       } else {
         await api.patch(`/pinjam/${currentPeminjaman.id}`, currentPeminjaman);
       }
-      fetchPeminjaman();
-      handleCloseModal();
+      if (currentPeminjaman !== 1) {
+        setCurrentPage(1);
+      } else {
+        fetchPeminjaman();
+      }
     } catch (error) {
       console.error("Gagal menyimpan data peminjaman:", error);
     }
@@ -109,6 +115,14 @@ const PeminjamanTable = () => {
         console.error("Gagal memproses pengembalian:", error);
       }
     }
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   const columns = [
@@ -158,7 +172,14 @@ const PeminjamanTable = () => {
           Tambah Peminjaman
         </button>
       </div>
-      <Table data={peminjaman} columns={columns} />
+      <Table
+        data={peminjaman}
+        columns={columns}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
+      />
 
       <ActionModal
         isOpen={isModalOpen}

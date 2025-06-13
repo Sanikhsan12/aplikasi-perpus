@@ -2,8 +2,21 @@ import user from "../models/UserModel.js";
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await user.findAll();
-    res.json(users);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await user.findAndCountAll({
+      limit: limit,
+      offset: offset,
+    });
+
+    res.json({
+      totalItems: count,
+      users: rows,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

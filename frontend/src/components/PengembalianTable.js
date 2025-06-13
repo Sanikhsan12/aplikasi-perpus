@@ -7,12 +7,17 @@ const PengembalianTable = () => {
   const [pengembalian, setPengembalian] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   useEffect(() => {
     const fetchPengembalian = async () => {
       try {
-        const response = await api.get("/pengembalian");
-        setPengembalian(response.data);
+        setLoading(true);
+        const response = await api.get(
+          `/pengembalian?page=${currentPage}&limit=10`
+        );
+        setPengembalian(response.data.pengembalian);
+        setTotalPages(response.data.totalPages);
         setLoading(false);
       } catch (err) {
         setError(err);
@@ -20,7 +25,15 @@ const PengembalianTable = () => {
       }
     };
     fetchPengembalian();
-  }, []);
+  }, [currentPage]);
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
 
   const columns = [
     { header: "ID", accessor: "id" },
@@ -47,7 +60,14 @@ const PengembalianTable = () => {
   return (
     <div className="box">
       <h2 className="title is-4">Daftar Pengembalian</h2>
-      <Table data={pengembalian} columns={columns} />
+      <Table
+        data={pengembalian}
+        columns={columns}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
+      />
     </div>
   );
 };

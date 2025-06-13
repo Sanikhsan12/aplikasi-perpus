@@ -17,12 +17,15 @@ const BooksTable = () => {
     tahun_terbit: "",
     stok: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/book");
-      setBooks(response.data);
+      const response = await api.get(`/book?page=${currentPage}&limit=10`);
+      setBooks(response.data.books);
+      setTotalPages(response.data.totalPages);
       setLoading(false);
     } catch (err) {
       setError(err);
@@ -32,7 +35,7 @@ const BooksTable = () => {
 
   useEffect(() => {
     fetchBooks();
-  }, []);
+  }, [currentPage]);
 
   const handleOpenModal = (type, book = null) => {
     setModalType(type);
@@ -73,7 +76,11 @@ const BooksTable = () => {
       } else {
         await api.patch(`/book/${currentBook.id}`, currentBook);
       }
-      fetchBooks();
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      } else {
+        fetchBooks();
+      }
       handleCloseModal();
     } catch (error) {
       console.error("Gagal menyimpan buku:", error);
@@ -89,6 +96,14 @@ const BooksTable = () => {
         console.error("Gagal menghapus buku:", error);
       }
     }
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   const columns = [
@@ -133,7 +148,14 @@ const BooksTable = () => {
           Tambah Buku
         </button>
       </div>
-      <Table data={books} columns={columns} />
+      <Table
+        data={books}
+        columns={columns}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
+      />
 
       <ActionModal
         isOpen={isModalOpen}

@@ -6,14 +6,22 @@ import db from "../config/Database.js";
 
 export const getPengembalians = async (req, res) => {
   try {
-    const pengembalians = await Pengembalian.findAll({
-      include: [
-        { model: Pinjam }, // Mengikutsertakan data peminjaman
-        { model: Buku }, // Mengikutsertakan data buku
-        { model: User }, // Mengikutsertakan data user
-      ],
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Pengembalian.findAndCountAll({
+      include: [{ model: Pinjam }, { model: Buku }, { model: User }],
+      limit: limit,
+      offset: offset,
+      order: [["tanggal_pengembalian", "DESC"]],
     });
-    res.json(pengembalians);
+    res.json({
+      totalItems: count,
+      pengembalians: rows,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

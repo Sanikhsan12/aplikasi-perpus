@@ -9,17 +9,21 @@ const UsersTable = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState("add");
   const [currentUser, setCurrentUser] = useState({
     username: "",
     email: "",
     role: "user",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/user");
-      setUsers(response.data);
+      const response = await api.get(`/user?page=${currentPage}&limit=10`);
+      setUsers(response.data.users);
+      setTotalPages(response.data.totalPages);
       setLoading(false);
     } catch (err) {
       setError(err);
@@ -29,7 +33,7 @@ const UsersTable = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage]);
 
   const handleOpenModal = (user) => {
     setCurrentUser(user);
@@ -48,11 +52,16 @@ const UsersTable = () => {
 
   const handleSave = async () => {
     try {
-      // Hanya kirim field yang bisa diubah
-      const { id, username, email, role } = currentUser;
-      await api.patch(`/user/${id}`, { username, email, role });
-      fetchUsers();
-      handleCloseModal();
+      if (modalType === "add") {
+        await api.post("/user", currentUser);
+      } else {
+        await api.put(`/user/${currentUser.id}`, currentUser);
+      }
+      if (currentUser !== 1) {
+        setCurrentPage(1);
+      } else {
+        fetchUsers();
+      }
     } catch (error) {
       console.error("Gagal memperbarui pengguna:", error);
     }
@@ -67,6 +76,14 @@ const UsersTable = () => {
         console.error("Gagal menghapus pengguna:", error);
       }
     }
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   const columns = [
@@ -101,7 +118,14 @@ const UsersTable = () => {
   return (
     <div className="box">
       <h2 className="title is-4">Daftar Pengguna</h2>
-      <Table data={users} columns={columns} />
+      <Table
+        data={users}
+        columns={columns}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
+      />
 
       <ActionModal
         isOpen={isModalOpen}

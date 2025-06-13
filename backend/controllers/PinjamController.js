@@ -4,8 +4,20 @@ import db from "../config/Database.js";
 
 export const getPinjams = async (req, res) => {
   try {
-    const pinjams = await Pinjam.findAll();
-    res.json(pinjams);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Pinjam.findAndCountAll({
+      limit: limit,
+      offset: offset,
+    });
+    res.json({
+      totalItems: count,
+      pinjams: rows,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

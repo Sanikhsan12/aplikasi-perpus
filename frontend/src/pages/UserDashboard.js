@@ -7,6 +7,7 @@ import BorrowingHistory from "../components/BorrowingHistory";
 
 const UserDashboard = () => {
   const [username, setUsername] = useState("");
+  const [activeTab, setActiveTab] = useState("borrow");
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
@@ -38,7 +39,7 @@ const UserDashboard = () => {
   return (
     <div>
       <nav
-        className="navbar is-info"
+        className="navbar is-dark"
         role="navigation"
         aria-label="main navigation"
       >
@@ -64,13 +65,26 @@ const UserDashboard = () => {
 
       <section className="section">
         <div className="container">
-          <div className="columns is-multiline">
-            <div className="column is-full">
+          <div className="tabs is-centered is-boxed">
+            <ul>
+              <li className={activeTab === "borrow" ? "is-active" : ""}>
+                <a onClick={() => setActiveTab("borrow")}>
+                  <span>Daftar Buku</span>
+                </a>
+              </li>
+              <li className={activeTab === "history" ? "is-active" : ""}>
+                <a onClick={() => setActiveTab("history")}>
+                  <span>Riwayat Peminjaman</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="content">
+            {activeTab === "borrow" && (
               <AvailableBooks onBorrowSuccess={handleBorrowSuccess} />
-            </div>
-            <div className="column is-full">
-              <BorrowingHistory key={refreshKey} />
-            </div>
+            )}
+            {activeTab === "history" && <BorrowingHistory key={refreshKey} />}
           </div>
         </div>
       </section>

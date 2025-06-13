@@ -57,7 +57,7 @@ const BooksTable = () => {
 
   useEffect(() => {
     fetchBooks();
-  }, [currentPage, fetchBooks]);
+  }, [currentPage]);
 
   const handleOpenModal = (type, book = null) => {
     setModalType(type);

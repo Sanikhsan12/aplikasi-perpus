@@ -15,10 +15,6 @@ const AdminDashboard = () => {
   const [expire, setExpire] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    refreshToken();
-  }, []);
-
   const refreshToken = async () => {
     try {
       const response = await api.post("/token", {
@@ -34,6 +30,10 @@ const AdminDashboard = () => {
       }
     }
   };
+
+  useEffect(() => {
+    refreshToken();
+  }, []);
 
   const Logout = () => {
     localStorage.removeItem("token");
